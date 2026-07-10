@@ -9,6 +9,7 @@ zooming in for detail).
 from __future__ import annotations
 
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -28,6 +29,7 @@ SCENE_MIN_FRAMES = 8
 # (very short or oddly encoded), so the cheap tier falls back to uniform.
 KEYFRAME_MIN = 4
 MAX_READ_DIMENSION = 1998
+VFR_OUTPUT_ARGS = ["-fps_mode", "vfr"]
 # Frame-delta dedup: downscale each frame to a DEDUP_THUMB x DEDUP_THUMB
 # grayscale thumbnail and treat two frames as near-identical when their mean
 # per-pixel difference (0-255) is at or below DEDUP_THRESHOLD. Conservative on
@@ -64,13 +66,18 @@ def parse_time(value: str | float | int | None) -> float | None:
     parts = s.split(":")
     try:
         if len(parts) == 1:
-            return float(parts[0])
-        if len(parts) == 2:
-            return int(parts[0]) * 60 + float(parts[1])
-        if len(parts) == 3:
-            return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+            seconds = float(parts[0])
+        elif len(parts) == 2:
+            seconds = int(parts[0]) * 60 + float(parts[1])
+        elif len(parts) == 3:
+            seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+        else:
+            raise ValueError
     except ValueError:
         pass
+    else:
+        if math.isfinite(seconds):
+            return seconds
     raise SystemExit(f"Cannot parse time value: {value!r} (expected SS, MM:SS, or HH:MM:SS)")
 
 
@@ -85,7 +92,7 @@ def format_time(seconds: float) -> str:
 
 def get_metadata(video_path: str) -> dict:
     if shutil.which("ffprobe") is None:
-        raise SystemExit("ffprobe is not installed. Install with: brew install ffmpeg")
+        raise SystemExit("ffprobe is not installed. macOS: brew install ffmpeg | Linux: apt install ffmpeg | Windows: winget install ffmpeg")
 
     result = subprocess.run(
         [
@@ -169,7 +176,7 @@ def extract(
     end_seconds: float | None = None,
 ) -> list[dict]:
     if shutil.which("ffmpeg") is None:
-        raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
+        raise SystemExit("ffmpeg is not installed. macOS: brew install ffmpeg | Linux: apt install ffmpeg | Windows: winget install ffmpeg")
 
     out_dir.mkdir(parents=True, exist_ok=True)
     for existing in out_dir.glob("frame_*.jpg"):
@@ -231,7 +238,7 @@ def extract_scene_candidates(
     every detected shot, as the user explicitly opted in.
     """
     if shutil.which("ffmpeg") is None:
-        raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
+        raise SystemExit("ffmpeg is not installed. macOS: brew install ffmpeg | Linux: apt install ffmpeg | Windows: winget install ffmpeg")
 
     out_dir.mkdir(parents=True, exist_ok=True)
     for existing in out_dir.glob("frame_*.jpg"):
@@ -253,7 +260,7 @@ def extract_scene_candidates(
     cmd += [
         "-i", str(Path(video_path).resolve()),
         "-vf", vf,
-        "-vsync", "vfr",
+        *VFR_OUTPUT_ARGS,
     ]
     if max_frames is not None:
         cmd += ["-frames:v", str(max_frames)]
@@ -339,7 +346,7 @@ def extract_at_timestamps(
     even-sampled (first + last kept) before extraction.
     """
     if shutil.which("ffmpeg") is None:
-        raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
+        raise SystemExit("ffmpeg is not installed. macOS: brew install ffmpeg | Linux: apt install ffmpeg | Windows: winget install ffmpeg")
 
     out_dir.mkdir(parents=True, exist_ok=True)
     for existing in out_dir.glob("cue_*.jpg"):
@@ -591,7 +598,7 @@ def extract_keyframes(
     even-sample first→last; too few keyframes → uniform fallback.
     """
     if shutil.which("ffmpeg") is None:
-        raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
+        raise SystemExit("ffmpeg is not installed. macOS: brew install ffmpeg | Linux: apt install ffmpeg | Windows: winget install ffmpeg")
 
     out_dir.mkdir(parents=True, exist_ok=True)
     for existing in out_dir.glob("frame_*.jpg"):
@@ -612,7 +619,7 @@ def extract_keyframes(
         "-skip_frame", "nokey",
         "-i", str(Path(video_path).resolve()),
         "-vf", f"{_scale_filter(resolution)},showinfo",
-        "-vsync", "vfr",
+        *VFR_OUTPUT_ARGS,
         "-q:v", "4",
         output_pattern,
     ]

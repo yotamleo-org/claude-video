@@ -115,7 +115,7 @@ def load_api_key(preferred: str | None = None) -> tuple[str, str] | tuple[None, 
 def extract_audio(video_path: str, out_path: Path) -> Path:
     """Extract mono 16kHz 64kbps mp3 — ~480 kB/min, fits any Whisper limit."""
     if shutil.which("ffmpeg") is None:
-        raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
+        raise SystemExit("ffmpeg is not installed. macOS: brew install ffmpeg | Linux: apt install ffmpeg | Windows: winget install ffmpeg")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -142,7 +142,7 @@ def extract_audio(video_path: str, out_path: Path) -> Path:
 def audio_duration(audio_path: Path) -> float:
     """Return the duration of an audio file in seconds via ffprobe."""
     if shutil.which("ffprobe") is None:
-        raise SystemExit("ffprobe is not installed. Install with: brew install ffmpeg")
+        raise SystemExit("ffprobe is not installed. macOS: brew install ffmpeg | Linux: apt install ffmpeg | Windows: winget install ffmpeg")
 
     result = subprocess.run(
         [
@@ -172,7 +172,7 @@ def split_audio(
     mp3 frame boundaries are close enough for transcription's purposes.
     """
     if shutil.which("ffmpeg") is None:
-        raise SystemExit("ffmpeg is not installed. Install with: brew install ffmpeg")
+        raise SystemExit("ffmpeg is not installed. macOS: brew install ffmpeg | Linux: apt install ffmpeg | Windows: winget install ffmpeg")
 
     work_dir.mkdir(parents=True, exist_ok=True)
     chunks: list[tuple[Path, float]] = []
@@ -422,7 +422,7 @@ def transcribe_video(
     Returns (segments, backend_used). Raises SystemExit on any failure.
     """
     if backend is None or api_key is None:
-        detected_backend, detected_key = load_api_key()
+        detected_backend, detected_key = load_api_key(backend)
         backend = backend or detected_backend
         api_key = api_key or detected_key
 

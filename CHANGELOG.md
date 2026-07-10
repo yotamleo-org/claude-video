@@ -2,6 +2,17 @@
 
 All notable changes to `/watch` are documented here.
 
+## [Unreleased]
+
+### Fixed
+- Frame extraction now uses `ffmpeg -fps_mode vfr`, fixing scene/keyframe extraction on ffmpeg builds that reject deprecated `-vsync vfr`.
+- Reused `--out-dir` runs no longer pick stale `video.*` downloads, captions, or metadata after a failed/new source.
+- Whisper backend overrides now require the matching provider key, so `--whisper openai` cannot accidentally use a Groq key (or vice versa).
+- Focused runs clamp `--end` past the media duration, reject non-finite/empty ranges cleanly, and keep runtime focus output ASCII-safe for legacy Windows consoles.
+- WebVTT parsing now accepts `MM:SS.mmm` cue timings, unescapes caption entities, and formats transcript timestamps past one hour as `H:MM:SS`.
+- Claude Code SessionStart hook paths now quote `CLAUDE_PLUGIN_ROOT`, so plugin cache paths containing spaces still run setup checks.
+- **YouTube `HTTP 403: Forbidden` on the video/audio stream.** YouTube's higher-quality formats now require browser impersonation (yt-dlp's optional `curl_cffi` backend), so the default format selection 403s on many videos even though captions and metadata download fine. `download_url` now detects a YouTube URL that produced no media file and automatically retries with the `android`/`mweb`/`tv`/`ios` player clients (progressive itag 18, up to ~360p) — enough to extract frames without impersonation. The final error, if still empty, points to `pip install curl_cffi` for full-quality formats.
+
 ## [0.2.0] — 2026-06-29
 
 ### Added
