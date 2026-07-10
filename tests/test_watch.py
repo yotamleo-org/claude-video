@@ -27,9 +27,13 @@ def _run_proc(clip: Path, *args: str, env_extra: dict | None = None) -> subproce
     env.pop("WATCH_DETAIL", None)
     if env_extra:
         env.update(env_extra)
+    # errors="replace": when a test forces the child onto a legacy encoding
+    # (PYTHONIOENCODING=cp1251), its stdout bytes are not UTF-8 — a strict
+    # decode in the harness would raise on Linux even though the child ran
+    # fine. The assertions only need returncode + ASCII substrings.
     return subprocess.run(
         [sys.executable, str(WATCH), str(clip), "--no-whisper", *args],
-        capture_output=True, text=True, env=env,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
     )
 
 
